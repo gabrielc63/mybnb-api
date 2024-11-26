@@ -37,7 +37,9 @@ gem 'bootsnap', require: false
 
 gem 'active_storage_validations'
 gem 'devise'
+gem 'devise-jwt'
 gem 'jsonapi-serializer'
+gem 'rack-cors'
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
