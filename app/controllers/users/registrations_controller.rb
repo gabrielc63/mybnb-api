@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 class Users::RegistrationsController < Devise::RegistrationsController
+  include RackSessionsFix
   respond_to :json
+
   # before_action :configure_sign_up_params, only: [:create]
   # before_action :configure_account_update_params, only: [:update]
 
@@ -60,4 +62,18 @@ class Users::RegistrationsController < Devise::RegistrationsController
   # def after_inactive_sign_up_path_for(resource)
   #   super(resource)
   # end
+
+  private
+
+  def respond_with(current_user, _opts = {})
+    if resource.persisted?
+      render json: {
+        data: UserSerializer.new(current_user).serializable_hash[:data][:data][:attributes]
+      }, status: :created
+    else
+      render json: {
+        messsage: "User couldn't be created. #{resource.errors.full_messages.to_sentence}"
+      }, status: :unprocessable_entity
+    end
+  end
 end
