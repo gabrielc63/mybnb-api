@@ -1,6 +1,8 @@
 module Api
   module V1
     class ListingsController < ApplicationController
+      before_action :set_listing, only: %i[show update destroy]
+
       def index
         @listings = Listing.all
         @listings = apply_filters(@listings)
@@ -14,16 +16,37 @@ module Api
         if @listing.save
           render json: ListingSerializer.new(@listing).serializable_hash, status: :created
         else
-          render json: {errors: @listing.errors}, status: :unprocessable_entity
+          render json: { errors: @listing.errors }, status: :unprocessable_entity
         end
       end
 
       def show
-        render json: ListingSerializer.new(@listing, { include: [:user, :reviews] }).serializable_hash
+        render json: ListingSerializer.new(@listing, { include: %i[user reviews] }).serializable_hash
+      end
+
+      def update
+        if @listing.update(listing_params.except(:photos))
+          photos = params[:listing][:photos]
+          photos&.each do |photo|
+            @listing.photos.attach(io: File.open(photo), filename: File.basename(photo), content_type: 'image/jpeg')
+          end
+          render json: ListingSerializer.new(@listing).serializable_hash
+        else
+          render json: { error: @listing.errors }, status: :unprocessable_entity
+        end
+      end
+
+      def destroy
+        if @listing.user_id == current_user.id
+          @listing.destroy
+          head :no_content
+        else
+          render json: { error: 'Unauthorized' }, status: :unauthorized
+        end
       end
 
       private
-      
+
       def set_listing
         @listing = Listing.find(params[:id])
       end
